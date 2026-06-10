@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#1a73e8"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<title>Banding Tube — Production</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,sans-serif;background:#f4f6f9;color:#1a1a1a;min-height:100vh}
+  header{background:#1a73e8;color:#fff;padding:14px 16px;position:sticky;top:0;z-index:10}
+  header h1{font-size:17px;font-weight:600}
+  header span{font-size:12px;opacity:.8}
+  .tabs{display:flex;background:#fff;border-bottom:1px solid #e0e0e0;position:sticky;top:53px;z-index:9}
+  .tab{flex:1;padding:12px;text-align:center;font-size:14px;font-weight:500;color:#666;cursor:pointer;border-bottom:3px solid transparent}
+  .tab.active{color:#1a73e8;border-bottom-color:#1a73e8}
+  .content{padding:16px;max-width:600px;margin:0 auto}
+  .card{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+
+  /* Articles couleurs */
+  .articles-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+  .art-btn{border:3px solid transparent;border-radius:12px;padding:12px 6px;text-align:center;cursor:pointer;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.1);transition:transform .1s}
+  .art-btn:active{transform:scale(0.95)}
+  .art-btn.selected{box-shadow:0 0 0 3px #1a73e8}
+  .art-dot{width:44px;height:44px;border-radius:50%;margin:0 auto 8px;border:2px solid rgba(0,0,0,.15)}
+  .art-size{font-size:16px;font-weight:700;color:#1a1a1a}
+  .art-label{font-size:11px;color:#888;margin-top:2px}
+
+  label{display:block;font-size:13px;color:#555;font-weight:500;margin-bottom:5px}
+  input,textarea{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:15px;font-family:inherit;background:#fafafa;margin-bottom:14px;outline:none}
+  input:focus,textarea:focus{border-color:#1a73e8;background:#fff}
+  textarea{min-height:80px;resize:vertical}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .btn-save{width:100%;padding:13px;background:#1a73e8;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-top:4px}
+  .btn-save:disabled{background:#90b8f0;cursor:not-allowed}
+  .error{color:#d32f2f;font-size:13px;margin-bottom:10px;padding:8px 12px;background:#fdecea;border-radius:8px}
+
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+  .stat{background:#fff;border-radius:10px;padding:12px 8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+  .stat-val{font-size:20px;font-weight:700;color:#1a73e8}
+  .stat-lbl{font-size:11px;color:#888;margin-top:3px}
+
+  .record{background:#fff;border-radius:10px;padding:14px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+  .rec-head{display:flex;justify-content:space-between;align-items:center}
+  .rec-badge{display:flex;align-items:center;gap:8px}
+  .rec-dot{width:28px;height:28px;border-radius:50%;border:2px solid rgba(0,0,0,.15);flex-shrink:0}
+  .rec-size{font-size:16px;font-weight:700}
+  .rec-date{font-size:11px;color:#aaa;margin-top:4px}
+  .rec-info{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .rec-item{background:#f9f9f9;border-radius:8px;padding:8px 10px}
+  .rec-item-lbl{font-size:11px;color:#888}
+  .rec-item-val{font-size:15px;font-weight:600;color:#1a1a1a}
+  .rec-notes{margin-top:8px;font-size:13px;color:#666;background:#f9f9f9;border-radius:8px;padding:8px 10px}
+  .del-btn{background:#fdecea;border:none;color:#d32f2f;cursor:pointer;padding:6px 12px;border-radius:6px;font-size:13px;font-weight:500;white-space:nowrap}
+  .empty{text-align:center;padding:40px 16px;color:#aaa;font-size:14px}
+  .chutes-warn{color:#f57c00}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#323232;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;z-index:99;display:none;white-space:nowrap}
+  .selected-art{display:none;align-items:center;gap:10px;background:#f0f7ff;border-radius:10px;padding:10px 14px;margin-bottom:14px}
+  .selected-art.show{display:flex}
+  .selected-art-dot{width:32px;height:32px;border-radius:50%;border:2px solid rgba(0,0,0,.15);flex-shrink:0}
+  .selected-art-txt{font-size:15px;font-weight:600}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏭 Banding Tube — BENRO</h1>
+  <span>Suivi de production</span>
+</header>
+
+<div class="tabs">
+  <div class="tab active" id="tab-saisie" onclick="showTab('saisie')">Saisie</div>
+  <div class="tab" id="tab-historique" onclick="showTab('historique')">Historique <span id="count-badge"></span></div>
+</div>
+
+<div class="content">
+  <div id="view-saisie">
+    <div class="card">
+      <label>Choisir l'article</label>
+      <div class="articles-grid" id="articles-grid"></div>
+
+      <div class="selected-art" id="selected-art">
+        <div class="selected-art-dot" id="selected-dot"></div>
+        <div class="selected-art-txt" id="selected-txt"></div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Quantité produite (pcs)</label>
+          <input type="number" id="qte" min="0" placeholder="ex: 500"/>
+        </div>
+        <div>
+          <label>Chutes (m)</label>
+          <input type="number" id="chutes" min="0" step="0.1" placeholder="ex: 12.5"/>
+        </div>
+      </div>
+
+      <label>Notes / Observations</label>
+      <textarea id="notes" placeholder="Remarques, incidents, qualité..."></textarea>
+
+      <div id="error-msg" class="error" style="display:none"></div>
+      <button class="btn-save" id="btn-save" onclick="saveRecord()">✅ Enregistrer la session</button>
+    </div>
+  </div>
+
+  <div id="view-historique" style="display:none">
+    <div class="stats">
+      <div class="stat"><div class="stat-val" id="s-sessions">0</div><div class="stat-lbl">Sessions</div></div>
+      <div class="stat"><div class="stat-val" id="s-total">0</div><div class="stat-lbl">Total pcs</div></div>
+      <div class="stat"><div class="stat-val" id="s-chutes">0</div><div class="stat-lbl">Chutes (m)</div></div>
+    </div>
+    <div id="records-list"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzTFxJFo5fmA8wpHqCcZuY26DTyx2fItn3E0XL5N6hzl_40dJelmbmZ47wLVGs7ZVEG/exec';
+
+  var ARTICLES = [
+    {size:'3/8"', color:'#22c55e', label:'Vert'},
+    {size:'1/2"', color:'#eab308', label:'Jaune'},
+    {size:'5/8"', color:'#3b82f6', label:'Bleu'},
+    {size:'3/4"', color:'#a855f7', label:'Violet'},
+    {size:'7/8"', color:'#1a1a1a', label:'Noir'},
+  ];
+
+  var selectedArt = null;
+  var records = JSON.parse(localStorage.getItem('banding_records') || '[]');
+
+  function save(){ localStorage.setItem('banding_records', JSON.stringify(records)); }
+
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.display = 'block';
+    setTimeout(function(){ t.style.display='none'; }, 3000);
+  }
+
+  function sendToSheet(payload, onDone){
+    var params = Object.keys(payload).map(function(k){
+      return encodeURIComponent(k)+'='+encodeURIComponent(payload[k]);
+    }).join('&');
+    var img = new Image();
+    img.onload = img.onerror = function(){ if(onDone) onDone(); };
+    img.src = SCRIPT_URL + '?' + params;
+  }
+
+  // Build article grid
+  var grid = document.getElementById('articles-grid');
+  ARTICLES.forEach(function(a, i){
+    var btn = document.createElement('div');
+    btn.className = 'art-btn';
+    btn.innerHTML = '<div class="art-dot" style="background:'+a.color+'"></div>'+
+      '<div class="art-size">'+a.size+'</div>'+
+      '<div class="art-label">'+a.label+'</div>';
+    btn.onclick = function(){
+      document.querySelectorAll('.art-btn').forEach(function(b){ b.classList.remove('selected'); });
+      btn.classList.add('selected');
+      selectedArt = a;
+      document.getElementById('selected-dot').style.background = a.color;
+      document.getElementById('selected-txt').textContent = a.size + ' — ' + a.label;
+      document.getElementById('selected-art').className = 'selected-art show';
+    };
+    grid.appendChild(btn);
+  });
+
+  function showTab(t){
+    document.getElementById('view-saisie').style.display = t==='saisie'?'block':'none';
+    document.getElementById('view-historique').style.display = t==='historique'?'block':'none';
+    document.getElementById('tab-saisie').className='tab'+(t==='saisie'?' active':'');
+    document.getElementById('tab-historique').className='tab'+(t==='historique'?' active':'');
+    if(t==='historique') renderHistory();
+  }
+
+  function saveRecord(){
+    var qte    = document.getElementById('qte').value;
+    var chutes = document.getElementById('chutes').value;
+    var notes  = document.getElementById('notes').value.trim();
+    var err    = document.getElementById('error-msg');
+    var btn    = document.getElementById('btn-save');
+    err.style.display='none';
+    if(!selectedArt){err.textContent='Veuillez choisir un article.';err.style.display='block';return;}
+    if(!qte||isNaN(qte)||Number(qte)<0){err.textContent='Quantité produite invalide.';err.style.display='block';return;}
+    if(chutes!==''&&(isNaN(chutes)||Number(chutes)<0)){err.textContent='Quantité de chutes invalide.';err.style.display='block';return;}
+
+    var now = new Date();
+    var id = String(now.getTime());
+    var dateStr = now.toLocaleDateString('fr-FR')+' '+now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    var record = {id:id, date:dateStr, article:selectedArt.size, color:selectedArt.color, label:selectedArt.label, qte:Number(qte), chutes:chutes!==''?Number(chutes):0, notes:notes};
+
+    btn.textContent='⏳ Envoi...'; btn.disabled=true;
+
+    sendToSheet({action:'save', id:id, date:dateStr, article:selectedArt.size, color:selectedArt.label, qte:Number(qte), chutes:chutes!==''?Number(chutes):0, notes:notes||''}, function(){
+      records.unshift(record); save(); resetForm(btn);
+      toast('✅ Enregistré dans Google Sheets !');
+    });
+  }
+
+  function resetForm(btn){
+    document.querySelectorAll('.art-btn').forEach(function(b){ b.classList.remove('selected'); });
+    selectedArt = null;
+    document.getElementById('selected-art').className = 'selected-art';
+    document.getElementById('qte').value='';
+    document.getElementById('chutes').value='';
+    document.getElementById('notes').value='';
+    btn.textContent='✅ Enregistrer la session';
+    btn.disabled=false;
+    updateBadge();
+  }
+
+  function deleteRecord(id){
+    if(!confirm('Supprimer cette session ?')) return;
+    sendToSheet({action:'delete', id:String(id)}, function(){
+      toast('🗑️ Supprimé de Google Sheets.');
+    });
+    records = records.filter(function(r){ return r.id!==id; });
+    save(); renderHistory(); updateBadge();
+  }
+
+  function updateBadge(){
+    var b=document.getElementById('count-badge');
+    b.textContent=records.length>0?'('+records.length+')':'';
+  }
+
+  function renderHistory(){
+    var totalQte=0, totalChutes=0;
+    records.forEach(function(r){totalQte+=r.qte; totalChutes+=r.chutes;});
+    document.getElementById('s-sessions').textContent=records.length;
+    document.getElementById('s-total').textContent=totalQte.toLocaleString('fr-FR');
+    document.getElementById('s-chutes').textContent=totalChutes.toLocaleString('fr-FR');
+    var list=document.getElementById('records-list');
+    if(records.length===0){list.innerHTML='<div class="empty">Aucune session enregistrée.</div>';return;}
+    list.innerHTML=records.map(function(r){
+      return '<div class="record">'+
+        '<div class="rec-head">'+
+          '<div class="rec-badge">'+
+            '<div class="rec-dot" style="background:'+r.color+'"></div>'+
+            '<div><div class="rec-size">'+r.article+'</div><div class="rec-date">'+r.date+'</div></div>'+
+          '</div>'+
+          '<button class="del-btn" onclick="deleteRecord(\''+r.id+'\')">🗑️ Sup.</button>'+
+        '</div>'+
+        '<div class="rec-info">'+
+          '<div class="rec-item"><div class="rec-item-lbl">Quantité</div><div class="rec-item-val">'+r.qte.toLocaleString('fr-FR')+' pcs</div></div>'+
+          '<div class="rec-item"><div class="rec-item-lbl">Chutes</div><div class="rec-item-val '+(r.chutes>0?'chutes-warn':'')+'">'+r.chutes.toLocaleString('fr-FR')+' m</div></div>'+
+        '</div>'+
+        (r.notes?'<div class="rec-notes">📝 '+r.notes+'</div>':'')+
+      '</div>';
+    }).join('');
+  }
+
+  updateBadge();
+</script>
+</body>
+</html>
